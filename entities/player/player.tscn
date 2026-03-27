@@ -486,9 +486,22 @@ action = "jump"
 function_name = "jump"
 metadata/_custom_type_script = "uid://dlqmc36quropm"
 
-[node name="Player" unique_id=445539203 node_paths=PackedStringArray("on_transfer_start", "on_transfer_end", "health_controller", "inventory", "running_particles", "on_attack", "on_fall") groups=["player", "save"] instance=ExtResource("1_fnaeb")]
+[sub_resource type="Resource" id="Resource_shoot"]
+script = ExtResource("12_b2kln")
+action = "shoot"
+function_name = "shoot"
+metadata/_custom_type_script = "uid://dlqmc36quropm"
+
+[sub_resource type="Resource" id="Resource_reload"]
+script = ExtResource("12_b2kln")
+action = "reload"
+function_name = "reload"
+metadata/_custom_type_script = "uid://dlqmc36quropm"
+
+[node name="Player" unique_id=445539203 node_paths=PackedStringArray("on_transfer_start", "on_transfer_end", "health_controller", "inventory", "running_particles", "on_attack", "on_fall", "on_shoot") groups=["player", "save"] instance=ExtResource("1_fnaeb")]
 y_sort_enabled = false
 script = ExtResource("2_x37y0")
+acceleration = 750.0
 on_transfer_start = NodePath("StateMachine/auto")
 on_transfer_end = NodePath("StateMachine/move")
 health_controller = NodePath("HealthController")
@@ -498,6 +511,7 @@ initial_facing = SubResource("Resource_3wlsy")
 running_particles = NodePath("SmokeParticles")
 on_attack = NodePath("StateMachine/attack")
 on_fall = NodePath("StateMachine/fall")
+on_shoot = NodePath("StateMachine/shoot")
 
 [node name="SmokeParticles" parent="." index="2" unique_id=1354660529 instance=ExtResource("6_dxaj8")]
 process_mode = 3
@@ -521,9 +535,14 @@ on_hp_decrease = NodePath("../StateMachine/hurt")
 on_hp_0 = NodePath("../StateMachine/death")
 metadata/_custom_type_script = "uid://igey4j36or78"
 
+[node name="Shadow" parent="." index="1" unique_id=1469070037]
+scale = Vector2(2.5, 2.5)
+
 [node name="AnimatedSprite2D" parent="." index="5" unique_id=1449465034]
 material = SubResource("ShaderMaterial_we0b7")
 sprite_frames = SubResource("SpriteFrames_mtric")
+offset = Vector2(0, -8)
+scale = Vector2(2.5, 2.5)
 
 [node name="AnimationTree" parent="." index="9" unique_id=2079922695]
 parameters/walk/BlendSpace2D/blend_position = Vector2(0.00376654, 0.992565)
@@ -538,7 +557,7 @@ script = ExtResource("11_we0b7")
 [node name="input_actions" type="Node" parent="StateMachine/move" index="0" unique_id=1239390229 node_paths=PackedStringArray("node_ref")]
 script = ExtResource("4_b1v48")
 node_ref = NodePath("../../..")
-input_actions = Array[ExtResource("12_b2kln")]([SubResource("Resource_we0b7"), SubResource("Resource_mtric")])
+input_actions = Array[ExtResource("12_b2kln")]([SubResource("Resource_we0b7"), SubResource("Resource_mtric"), SubResource("Resource_shoot"), SubResource("Resource_reload")])
 
 [node name="attack" type="Node" parent="StateMachine" index="1" unique_id=2060421400 node_paths=PackedStringArray("on_completion")]
 script = ExtResource("12_m3ydn")
@@ -576,7 +595,22 @@ on_exit = Dictionary[String, Variant]({
 })
 metadata/_custom_type_script = "uid://di3e8lyqvjft4"
 
-[node name="hurt" type="Node" parent="StateMachine" index="2" unique_id=2130344876 node_paths=PackedStringArray("on_completion")]
+[node name="shoot" type="Node" parent="StateMachine" index="2" node_paths=PackedStringArray("on_completion")]
+script = ExtResource("8_bp05k")
+on_completion = [NodePath("../move")]
+delay_completion = Vector2(0.16, 0.16)
+
+[node name="is_attacking" type="Node" parent="StateMachine/shoot" index="0" node_paths=PackedStringArray("node")]
+script = ExtResource("9_fvq3l")
+node = NodePath("../../..")
+on_enter = Dictionary[String, Variant]({
+"is_attacking": true
+})
+on_exit = Dictionary[String, Variant]({
+"is_attacking": false
+})
+
+[node name="hurt" type="Node" parent="StateMachine" index="3" unique_id=2130344876 node_paths=PackedStringArray("on_completion")]
 script = ExtResource("12_m3ydn")
 impulse_force = -450.0
 on_completion = [NodePath("../move")]
@@ -605,7 +639,7 @@ method_params = [0.3]
 send_statemachine_params = false
 metadata/_custom_type_script = "uid://dd2m5xedjwd4m"
 
-[node name="fall" type="Node" parent="StateMachine" index="3" unique_id=483554438 node_paths=PackedStringArray("on_completion")]
+[node name="fall" type="Node" parent="StateMachine" index="4" unique_id=483554438 node_paths=PackedStringArray("on_completion")]
 script = ExtResource("8_bp05k")
 on_completion = [NodePath("../move")]
 delay_completion = Vector2(0.2, 0.2)
@@ -637,11 +671,11 @@ method_name = "return_to_safe_position"
 send_statemachine_params = false
 metadata/_custom_type_script = "uid://dd2m5xedjwd4m"
 
-[node name="auto" type="Node" parent="StateMachine" index="4" unique_id=420756305]
+[node name="auto" type="Node" parent="StateMachine" index="5" unique_id=420756305]
 script = ExtResource("8_bp05k")
 disable_entity = true
 
-[node name="death" type="Node" parent="StateMachine" index="5" unique_id=639759410]
+[node name="death" type="Node" parent="StateMachine" index="6" unique_id=639759410]
 script = ExtResource("8_bp05k")
 disable_entity = true
 

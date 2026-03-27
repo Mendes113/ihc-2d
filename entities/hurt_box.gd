@@ -18,6 +18,10 @@ func _on_hitbox_entered(hitbox: HitBox):
 	if !hitbox or !health_controller:
 		return
 	health_controller.change_hp(hitbox.hp_change, hitbox.owner.name)
+	if hitbox.hp_change < 0 and hitbox.owner is CharacterEntity and hitbox.owner != owner:
+		(hitbox.owner as CharacterEntity).hit.emit()
+	if hitbox.has_method("_on_hurt_box_hit"):
+		hitbox.call("_on_hurt_box_hit", self)
 
 func _on_entity_action_performed(action: String) -> void:
 	process_mode = PROCESS_MODE_DISABLED if action == "jump" else PROCESS_MODE_INHERIT

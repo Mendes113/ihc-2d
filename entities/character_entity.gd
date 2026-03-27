@@ -13,13 +13,21 @@ extends CharacterBody2D
 @export var initial_facing: Direction ## The initial direction the entity will face when spawned.
 
 @export_group("Movement")
-@export var max_speed := 250.0 ## The maximum speed the entity can reach while moving.
-@export var friction := 2000.0 ## Affects the time it takes for the entity to reach max_speed or to stop.
+@export var max_speed := 200.0 ## The maximum speed the entity can reach while moving.
+@export var acceleration := 800.0 ## Affects how fast the entity reaches max_speed while moving.
+@export var friction := 3500.0 ## Affects how fast the entity slows down when not moving.
 @export var blocks_detector: RayCast2D ## A RayCast2D node to identify when the entity is in front of a tile or element that blocks it.
 @export var fall_detector: ShapeCast2D ## A ShapeCast2D node that identifies when the entity is falling, triggering the "on_fall" state.
 @export var running_particles: GPUParticles2D = null ## A GPUParticles2D to enable when the entity is running (is_running == true).
 var speed_multiplier := 1.0
 var friction_multiplier := 1.0
+@export_group("Animation")
+@export var idle_animation_speed := 0.11
+@export var walk_animation_speed_range := Vector2(0.22, 0.36)
+@export var run_animation_speed_range := Vector2(0.30, 0.48)
+@export var animation_speed_smoothing := 10.0
+
+var movement_anim_ratio := 0.0
 
 @export_group("Jump")
 @export var jump_height := 36.0
@@ -132,8 +140,20 @@ func _emit_action(action: String, value: bool):
 ##internal - Used to update the current animation in the AnimationTree with the facing direction.
 func _update_animation():
 	var current_anim = animation_tree.get("parameters/playback").get_current_node()
+	_update_animation_speed()
 	if current_anim:
 		animation_tree.set("parameters/%s/BlendSpace2D/blend_position" % current_anim, Vector2(facing.x, facing.y))
+
+## Internal - Sync movement animation speed with real movement velocity.
+func _update_animation_speed():
+	var delta: float = get_process_delta_time()
+	var max_movement_speed: float = maxf(max_speed * maxf(speed_multiplier, 1.0), 1.0)
+	var target_ratio: float = clampf(velocity.length() / max_movement_speed, 0.0, 1.0)
+	var weight: float = clampf(animation_speed_smoothing * delta, 0.0, 1.0)
+	movement_anim_ratio = lerpf(movement_anim_ratio, target_ratio, weight)
+	animation_tree.set("parameters/idle/TimeScale/scale", idle_animation_speed)
+	animation_tree.set("parameters/walk/TimeScale/scale", lerpf(walk_animation_speed_range.x, walk_animation_speed_range.y, movement_anim_ratio))
+	animation_tree.set("parameters/run/TimeScale/scale", lerpf(run_animation_speed_range.x, run_animation_speed_range.y, movement_anim_ratio))
 
 ##internal - Checks if the entity is inside an area that it is considered a falling zone.
 func _check_falling():
@@ -171,15 +191,15 @@ func move(direction: Vector2):
 	var delta = get_process_delta_time()
 	var target_velocity = Vector2.ZERO
 	var moving_direction := direction.normalized()
-	var new_friction = friction
+	var move_step := friction * friction_multiplier
 	moving_direction *= 1 if not invert_moving_direction else -1
 	if moving_direction != Vector2.ZERO:
 		if update_facing_with_movement:
 			facing = moving_direction
 		speed = max_speed * speed_multiplier
-		new_friction = friction * friction_multiplier
+		move_step = acceleration * friction_multiplier
 		target_velocity = moving_direction * speed
-	velocity = velocity.move_toward(target_velocity, new_friction * delta)
+	velocity = velocity.move_toward(target_velocity, move_step * delta)
 
 ##Starts a jump.
 func jump():

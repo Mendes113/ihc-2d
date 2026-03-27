@@ -7,7 +7,13 @@ extends Resource
 @export var function_args: Array = [] ## An array of arguments to pass when calling the function.
 
 func check_input(event: InputEvent, node_ref: Node):
-	if mode == "Pressed" and event.is_action_pressed(action) or mode == "Released" and event.is_action_released(action):
+	if mode == "Pressed":
+		# Ignore keyboard auto-repeat; each key press should trigger once.
+		if event is InputEventKey and event.echo:
+			return
+		if event.is_action_pressed(action):
+			_call_function(node_ref)
+	elif mode == "Released" and event.is_action_released(action):
 		_call_function(node_ref)
 
 func _call_function(node_ref: Node):
